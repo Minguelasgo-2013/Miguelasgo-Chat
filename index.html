@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Miguelasgo Chat 🔒</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #13131a;
+    --bg3: #1a1a24;
+    --border: #2a2a3a;
+    --accent: #7c3aed;
+    --accent2: #9f67ff;
+    --green: #22c55e;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --bubble-me: #4c1d95;
+    --bubble-them: #1e1e2e;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; overflow: hidden; }
+
+  /* ── AUTH ── */
+  #auth-screen {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 50% 0%, #2d1b69 0%, var(--bg) 60%);
+  }
+  .auth-box {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 20px;
+    padding: 2.5rem; width: 360px; text-align: center;
+  }
+  .auth-logo { font-size: 3rem; margin-bottom: 0.5rem; }
+  .auth-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .auth-sub { color: var(--muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+  .auth-tabs { display: flex; background: var(--bg3); border-radius: 10px; padding: 4px; margin-bottom: 1.5rem; }
+  .auth-tab {
+    flex: 1; padding: 0.5rem; border: none; background: transparent; color: var(--muted);
+    cursor: pointer; border-radius: 8px; font-size: 0.9rem; transition: all 0.2s;
+  }
+  .auth-tab.active { background: var(--accent); color: white; }
+  input, textarea, select {
+    width: 100%; padding: 0.75rem 1rem; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text); font-size: 0.95rem; outline: none; transition: border 0.2s;
+  }
+  input:focus, textarea:focus { border-color: var(--accent); }
+  .input-group { margin-bottom: 1rem; text-align: left; }
+  .input-group label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.4rem; }
+  .emoji-picker-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 0.5rem 0; }
+  .emoji-btn { font-size: 1.5rem; cursor: pointer; padding: 4px; border-radius: 6px; border: 2px solid transparent; }
+  .emoji-btn.selected { border-color: var(--accent); }
+  .btn {
+    width: 100%; padding: 0.75rem; border: none; border-radius: 10px; cursor: pointer;
+    font-size: 1rem; font-weight: 600; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-sm {
+    padding: 0.5rem 1rem; border-radius: 8px; border: none; cursor: pointer;
+    font-size: 0.85rem; font-weight: 600; transition: all 0.2s;
+  }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent2); }
+  .btn-danger { background: var(--red); color: white; }
+  .error-msg { color: var(--red); font-size: 0.85rem; margin-top: 0.5rem; min-height: 1.2em; }
+
+  /* ── LAYOUT PRINCIPAL ── */
+  #app { display: none; width: 100%; height: 100vh; }
+  .sidebar {
+    width: 280px; min-width: 280px; background: var(--bg2); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; height: 100vh;
+  }
+  .sidebar-header {
+    padding: 1rem; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+  .my-avatar { font-size: 2rem; }
+  .my-name { font-weight: 700; font-size: 0.95rem; }
+  .my-sub { font-size: 0.75rem; color: var(--muted); }
+  .sidebar-nav { display: flex; border-bottom: 1px solid var(--border); }
+  .nav-btn {
+    flex: 1; padding: 0.65rem; border: none; background: transparent; color: var(--muted);
+    cursor: pointer; font-size: 1.2rem; position: relative; transition: all 0.2s;
+  }
+  .nav-btn.active { color: var(--accent2); border-bottom: 2px solid var(--accent); }
+  .nav-btn:hover { color: var(--text); }
+  .badge {
+    position: absolute; top: 4px; right: 4px; background: var(--red);
+    color: white; font-size: 0.6rem; font-weight: 700; border-radius: 99px;
+    padding: 1px 5px; min-width: 16px; text-align: center;
+  }
+  .search-box { padding: 0.75rem; }
+  .search-box input { font-size: 0.85rem; }
+  .user-list { flex: 1; overflow-y: auto; }
+  .user-item {
+    display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem;
+    cursor: pointer; transition: background 0.15s; border-bottom: 1px solid var(--border);
+  }
+  .user-item:hover { background: var(--bg3); }
+  .user-item.active { background: var(--bg3); border-left: 3px solid var(--accent); }
+  .user-avatar { font-size: 1.8rem; flex-shrink: 0; }
+  .user-info { flex: 1; min-width: 0; }
+  .user-name { font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-preview { font-size: 0.75rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-meta { text-align: right; flex-shrink: 0; }
+  .user-time { font-size: 0.7rem; color: var(--muted); }
+  .unread-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; margin-left: auto; margin-top: 4px; }
+  .sidebar-footer { padding: 0.75rem; border-top: 1px solid var(--border); }
+
+  /* ── PANEL DERECHO ── */
+  .main-panel { flex: 1; display: flex; flex-direction: column; height: 100vh; min-width: 0; }
+  .panel-header {
+    padding: 1rem 1.5rem; background: var(--bg2); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .panel-title { font-size: 1.1rem; font-weight: 700; }
+  .panel-sub { font-size: 0.78rem; color: var(--green); }
+  .panel-actions { margin-left: auto; display: flex; gap: 0.5rem; }
+  .lock-badge { font-size: 0.75rem; color: var(--green); background: #14532d; padding: 3px 10px; border-radius: 99px; }
+
+  /* ── CHAT ── */
+  #chat-panel { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  .messages-area { flex: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .msg-row { display: flex; align-items: flex-end; gap: 0.5rem; }
+  .msg-row.me { flex-direction: row-reverse; }
+  .msg-bubble {
+    max-width: 70%; padding: 0.65rem 1rem; border-radius: 18px;
+    font-size: 0.9rem; line-height: 1.5; word-break: break-word;
+  }
+  .msg-row.them .msg-bubble { background: var(--bubble-them); border-bottom-left-radius: 4px; }
+  .msg-row.me .msg-bubble { background: var(--bubble-me); border-bottom-right-radius: 4px; }
+  .msg-time { font-size: 0.65rem; color: var(--muted); white-space: nowrap; margin-bottom: 4px; }
+  .msg-status { font-size: 0.7rem; color: var(--muted); margin-top: 2px; text-align: right; }
+  .msg-status.read { color: var(--accent2); }
+  .chat-input-area {
+    padding: 1rem 1.5rem; background: var(--bg2); border-top: 1px solid var(--border);
+    display: flex; gap: 0.75rem; align-items: flex-end;
+  }
+  .chat-input-area textarea { resize: none; height: 44px; max-height: 120px; line-height: 1.5; }
+  .send-btn {
+    width: 44px; height: 44px; border-radius: 50%; border: none; background: var(--accent);
+    color: white; font-size: 1.2rem; cursor: pointer; flex-shrink: 0; transition: background 0.2s;
+  }
+  .send-btn:hover { background: var(--accent2); }
+
+  /* ── MAIL ── */
+  #mail-panel { display: none; flex-direction: column; flex: 1; min-height: 0; }
+  .mail-toolbar {
+    padding: 0.75rem 1.5rem; background: var(--bg2); border-bottom: 1px solid var(--border);
+    display: flex; gap: 0.75rem; align-items: center;
+  }
+  .mail-tabs { display: flex; gap: 0.5rem; }
+  .mail-tab { padding: 0.4rem 1rem; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-size: 0.85rem; }
+  .mail-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .mail-list { flex: 1; overflow-y: auto; }
+  .mail-item {
+    padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); cursor: pointer;
+    transition: background 0.15s; display: flex; gap: 1rem; align-items: flex-start;
+  }
+  .mail-item:hover { background: var(--bg3); }
+  .mail-item.unread { border-left: 3px solid var(--accent); }
+  .mail-avatar { font-size: 1.5rem; }
+  .mail-info { flex: 1; min-width: 0; }
+  .mail-from { font-weight: 600; font-size: 0.9rem; }
+  .mail-subject { font-size: 0.85rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mail-preview { font-size: 0.78rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mail-time { font-size: 0.72rem; color: var(--muted); flex-shrink: 0; }
+  .mail-view {
+    flex: 1; padding: 2rem; overflow-y: auto; display: none; flex-direction: column; gap: 1rem;
+  }
+  .mail-view-header { border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+  .mail-view-subject { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .mail-view-meta { font-size: 0.85rem; color: var(--muted); display: flex; gap: 1rem; flex-wrap: wrap; }
+  .mail-view-body { font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; }
+
+  /* ── COMPOSE ── */
+  .compose-modal {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 100; align-items: flex-end; justify-content: flex-end; padding: 1rem;
+  }
+  .compose-modal.open { display: flex; }
+  .compose-box {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 16px;
+    width: 520px; max-height: 80vh; display: flex; flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .compose-header {
+    padding: 1rem 1.25rem; background: var(--bg3); border-radius: 16px 16px 0 0;
+    display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border);
+  }
+  .compose-title { font-weight: 700; font-size: 0.95rem; }
+  .compose-close { background: transparent; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; }
+  .compose-body { padding: 1rem; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; }
+  .compose-body textarea { resize: vertical; min-height: 200px; }
+  .compose-footer { padding: 0.75rem 1rem; border-top: 1px solid var(--border); display: flex; gap: 0.75rem; justify-content: flex-end; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: var(--muted); gap: 1rem;
+  }
+  .empty-icon { font-size: 4rem; }
+  .empty-text { font-size: 1rem; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* ── SPINNER ── */
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.75rem 1.5rem; font-size: 0.9rem; z-index: 999;
+    opacity: 0; transition: opacity 0.3s; pointer-events: none;
+  }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     PANTALLA DE AUTENTICACIÓN
+══════════════════════════════════════════ -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">🔒</div>
+    <div class="auth-title">Miguelasgo Chat</div>
+    <div class="auth-sub">Mensajería cifrada de extremo a extremo</div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Entrar</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Registro</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="login-form">
+      <div class="input-group">
+        <label>Usuario</label>
+        <input type="text" id="login-user" placeholder="tu_usuario" autocomplete="username">
+      </div>
+      <div class="input-group">
+        <label>Contraseña</label>
+        <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <div style="display:flex;align-items:center;gap:0.5rem;">
+  <button class="btn btn-primary" onclick="doLogin()" style="flex:1">Entrar</button>
+  <button type="button" onclick="document.getElementById('info-modal').style.display='flex'" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:var(--bg3);color:var(--muted);cursor:pointer;font-size:0.85rem;flex-shrink:0;" title="Información">ℹ️</button>
+</div>
+
+<div id="info-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center;" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:2rem;max-width:420px;width:90%;max-height:80vh;overflow-y:auto;">
+    <div style="font-size:1.5rem;margin-bottom:0.75rem;">🔒 Miguelasgo Chat</div>
+    <div style="font-size:0.9rem;line-height:1.7;color:var(--text);">
+      <strong>👤 Quién soy</strong><br><br>
+Soy Miguelasgo, desarrollador independiente. Miguelasgo Chat es un proyecto personal creado desde cero con el objetivo de ofrecer una mensajería privada y segura para personas de confianza.<br><br>
+
+<strong>🔒 Seguridad</strong><br><br>
+Todos los mensajes y correos están cifrados de extremo a extremo (E2E) usando WebCrypto API. Esto significa que el servidor nunca ve el contenido de tus mensajes — solo datos cifrados ilegibles. Ni siquiera el administrador puede leer lo que envías.<br><br>
+
+<strong>⚠️ Política de uso</strong><br><br>
+Miguelasgo Chat es una plataforma privada de uso personal. Queda estrictamente prohibido utilizar este servicio para:<br><br>
+- Actividades ilegales de cualquier tipo<br>
+- Acoso, amenazas o contenido dañino<br>
+- Difusión de contenido ilegal<br><br>
+El incumplimiento de estas normas puede resultar en la suspensión inmediata de la cuenta.
+    </div>
+    <button onclick="document.getElementById('info-modal').style.display='none'" style="margin-top:1.5rem;width:100%;padding:0.6rem;border-radius:8px;border:none;background:var(--accent);color:white;cursor:pointer;font-weight:600;">Entendido</button>
+  </div>
+</div>
+      <div class="error-msg" id="login-err"></div>
+    </div>
+
+    <!-- REGISTRO -->
+    <div id="register-form" style="display:none">
+      <div class="input-group">
+        <label>Usuario</label>
+        <input type="text" id="reg-user" placeholder="min. 3 caracteres" autocomplete="username">
+      </div>
+      <div class="input-group">
+        <label>Contraseña</label>
+        <input type="password" id="reg-pass" placeholder="min. 6 caracteres" autocomplete="new-password">
+      </div>
+      <div class="input-group">
+        <label>Elige tu avatar</label>
+        <div class="emoji-picker-row" id="avatar-picker"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.5rem;">
+  <button class="btn btn-primary" onclick="doRegister()" style="flex:1">Crear cuenta</button>
+  <button type="button" onclick="document.getElementById('info-modal').style.display='flex'" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:var(--bg3);color:var(--muted);cursor:pointer;font-size:0.85rem;flex-shrink:0;" title="Información">ℹ️</button>
+</div>
+      <div class="error-msg" id="reg-err"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     APP PRINCIPAL
+══════════════════════════════════════════ -->
+<div id="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="my-avatar" id="my-avatar">👤</div>
+      <div>
+        <div class="my-name" id="my-name">—</div>
+        <div class="my-sub">🔒 E2E cifrado</div>
+      </div>
+    </div>
+
+    <div class="sidebar-nav">
+      <button class="nav-btn active" id="nav-chat" onclick="switchSection('chat')" title="Chats">
+        💬 <span class="badge" id="chat-badge" style="display:none"></span>
+      </button>
+      <button class="nav-btn" id="nav-mail" onclick="switchSection('mail')" title="Correo">
+        📧 <span class="badge" id="mail-badge" style="display:none"></span>
+      </button>
+    </div>
+
+    <div class="search-box">
+      <input type="text" id="search-input" placeholder="🔍 Buscar usuarios..." oninput="filterUsers()">
+    </div>
+
+    <div class="user-list" id="user-list"></div>
+
+    <div class="sidebar-footer">
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()" style="width:100%">🚪 Cerrar sesión</button>
+    </div>
+  </div>
+
+  <!-- PANEL PRINCIPAL -->
+  <div class="main-panel">
+    <!-- HEADER -->
+    <div class="panel-header" id="panel-header">
+      <div class="empty-icon" style="font-size:1.5rem" id="header-avatar">💬</div>
+      <div>
+        <div class="panel-title" id="panel-title">Selecciona un usuario</div>
+        <div class="panel-sub" id="panel-sub"></div>
+      </div>
+      <div class="panel-actions" id="panel-actions"></div>
+    </div>
+
+    <!-- CHAT PANEL -->
+    <div id="chat-panel">
+      <div class="messages-area" id="messages-area">
+        <div class="empty-state">
+          <div class="empty-icon">🔒</div>
+          <div class="empty-text">Selecciona un usuario para chatear</div>
+          <div style="font-size:0.8rem;color:var(--muted)">Los mensajes están cifrados E2E</div>
+        </div>
+      </div>
+      <div class="chat-input-area" id="chat-input-area" style="display:none">
+        <textarea id="chat-input" placeholder="Mensaje cifrado..." rows="1" onkeydown="chatKeydown(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" onclick="sendMessage()">➤</button>
+      </div>
+    </div>
+
+    <!-- MAIL PANEL -->
+    <div id="mail-panel">
+      <div class="mail-toolbar">
+        <div class="mail-tabs">
+          <button class="mail-tab active" onclick="switchMailTab('inbox')">📥 Recibidos</button>
+          <button class="mail-tab" onclick="switchMailTab('sent')">📤 Enviados</button>
+          <button class="mail-tab" onclick="switchMailTab('drafts')">📝 Borradores</button>
+        </div>
+        <button class="btn btn-sm btn-primary" onclick="openCompose()" style="margin-left:auto">✏️ Nuevo</button>
+      </div>
+      <div style="display:flex;flex:1;min-height:0;">
+        <div class="mail-list" id="mail-list" style="width:360px;border-right:1px solid var(--border);"></div>
+        <div class="mail-view" id="mail-view">
+          <div class="empty-state">
+            <div class="empty-icon">📧</div>
+            <div class="empty-text">Selecciona un correo</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     COMPOSE MODAL
+══════════════════════════════════════════ -->
+<div class="compose-modal" id="compose-modal">
+  <div class="compose-box">
+    <div class="compose-header">
+      <span class="compose-title">✉️ Nuevo correo cifrado</span>
+      <button class="compose-close" onclick="closeCompose()">✕</button>
+    </div>
+    <div class="compose-body">
+      <div class="input-group">
+        <label>Para</label>
+        <select id="compose-to">
+          <option value="">Seleccionar destinatario...</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>Asunto</label>
+        <input type="text" id="compose-subject" placeholder="Asunto del correo">
+      </div>
+      <div class="input-group">
+        <label>Mensaje</label>
+        <textarea id="compose-body-text" placeholder="Escribe tu mensaje..."></textarea>
+      </div>
+    </div>
+    <div class="compose-footer">
+      <button class="btn-sm btn-ghost" onclick="saveDraft()">💾 Borrador</button>
+      <button class="btn-sm btn-primary" onclick="sendMail()">🔒 Enviar cifrado</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+// ESTADO GLOBAL
+// ══════════════════════════════════════════
+const AVATARS = ['😎','🤖','👾','🦊','🐺','🦁','🐉','🌙','⚡','🔥','💎','🎮','🎯','🚀','🦈','🐋','🌊','🍀'];
+let myUser = null;
+let myKeyPair = null;    // {publicKey, privateKey} WebCrypto
+let userPubkeys = {};    // username -> CryptoKey
+let currentChat = null;
+let currentSection = 'chat';
+let currentMailTab = 'inbox';
+let currentMail = null;
+let allUsers = [];
+let sseSource = null;
+let composeDraftId = null;
+let unreadCounts = {chat: 0, mail: 0};
+
+// ══════════════════════════════════════════
+// WEBCRYPTO E2E
+// ══════════════════════════════════════════
+async function generateKeyPair() {
+  return await crypto.subtle.generateKey(
+    { name: 'RSA-OAEP', modulusLength: 2048, publicExponent: new Uint8Array([1,0,1]), hash: 'SHA-256' },
+    true, ['encrypt', 'decrypt']
+  );
+}
+
+async function exportPubKey(key) {
+  const exported = await crypto.subtle.exportKey('spki', key);
+  return btoa(String.fromCharCode(...new Uint8Array(exported)));
+}
+
+async function importPubKey(b64) {
+  const binary = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  return await crypto.subtle.importKey('spki', binary, { name: 'RSA-OAEP', hash: 'SHA-256' }, true, ['encrypt']);
+}
+
+async function encryptMessage(pubKey, text) {
+  // Cifra con AES-GCM (simétrico), luego cifra la clave AES con RSA del destinatario
+  const aesKey = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encoded = new TextEncoder().encode(text);
+  const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, aesKey, encoded);
+
+  // Exportar clave AES y cifrarla con RSA del destinatario
+  const rawAes = await crypto.subtle.exportKey('raw', aesKey);
+  const encAes = await crypto.subtle.encrypt({ name: 'RSA-OAEP' }, pubKey, rawAes);
+
+  return {
+    content: btoa(String.fromCharCode(...new Uint8Array(ciphertext))),
+    iv: btoa(String.fromCharCode(...iv)),
+    encKey: btoa(String.fromCharCode(...new Uint8Array(encAes)))
+  };
+}
+
+async function decryptMessage(privKey, content, iv, encKey) {
+  try {
+    // Descifrar clave AES con nuestra clave privada RSA
+    const encKeyBin = Uint8Array.from(atob(encKey), c => c.charCodeAt(0));
+    const rawAes = await crypto.subtle.decrypt({ name: 'RSA-OAEP' }, privKey, encKeyBin);
+    const aesKey = await crypto.subtle.importKey('raw', rawAes, { name: 'AES-GCM' }, false, ['decrypt']);
+
+    const ivBin = Uint8Array.from(atob(iv), c => c.charCodeAt(0));
+    const ciphertextBin = Uint8Array.from(atob(content), c => c.charCodeAt(0));
+    const plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: ivBin }, aesKey, ciphertextBin);
+    return new TextDecoder().decode(plaintext);
+  } catch(e) {
+    return '🔒 [Mensaje cifrado - no se puede descifrar]';
+  }
+}
+
+// Guardar/recuperar clave privada en localStorage (cifrada con la contraseña)
+async function savePrivKey(privKey, password) {
+  const exported = await crypto.subtle.exportKey('pkcs8', privKey);
+  // Derivar clave de cifrado desde la contraseña
+  const passKey = await deriveKeyFromPassword(password);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, passKey, exported);
+  localStorage.setItem('mc_privkey', btoa(String.fromCharCode(...new Uint8Array(encrypted))));
+  localStorage.setItem('mc_privkey_iv', btoa(String.fromCharCode(...iv)));
+}
+
+async function loadPrivKey(password) {
+  const stored = localStorage.getItem('mc_privkey');
+  const storedIv = localStorage.getItem('mc_privkey_iv');
+  if (!stored || !storedIv) return null;
+  try {
+    const passKey = await deriveKeyFromPassword(password);
+    const iv = Uint8Array.from(atob(storedIv), c => c.charCodeAt(0));
+    const enc = Uint8Array.from(atob(stored), c => c.charCodeAt(0));
+    const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, passKey, enc);
+    return await crypto.subtle.importKey('pkcs8', decrypted, { name: 'RSA-OAEP', hash: 'SHA-256' }, true, ['decrypt']);
+  } catch(e) {
+    return null;
+  }
+}
+
+async function deriveKeyFromPassword(password) {
+  const enc = new TextEncoder().encode(password);
+  const keyMaterial = await crypto.subtle.importKey('raw', enc, 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: new TextEncoder().encode('miguelasgo-chat-salt'), iterations: 100000, hash: 'SHA-256' },
+    keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+  );
+}
+
+async function getPubKeyFor(username) {
+  if (userPubkeys[username]) return userPubkeys[username];
+  const users = await api('/api/users');
+  const u = users.find(x => x.username === username);
+  if (!u || !u.pubkey) return null;
+  const key = await importPubKey(u.pubkey);
+  userPubkeys[username] = key;
+  return key;
+}
+
+// ══════════════════════════════════════════
+// API
+// ══════════════════════════════════════════
+async function api(url, method = 'GET', body = null) {
+  const opts = { method, headers: {} };
+  if (body) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const res = await fetch(url, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error');
+  return data;
+}
+
+// ══════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register')));
+  document.getElementById('login-form').style.display = tab === 'login' ? '' : 'none';
+  document.getElementById('register-form').style.display = tab === 'register' ? '' : 'none';
+}
+
+// Render avatar picker
+document.getElementById('avatar-picker').innerHTML = AVATARS.map(e =>
+  `<span class="emoji-btn" onclick="selectAvatar(this,'${e}')">${e}</span>`
+).join('');
+let selectedAvatar = AVATARS[0];
+document.querySelector('.emoji-btn').classList.add('selected');
+
+function selectAvatar(el, emoji) {
+  document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedAvatar = emoji;
+}
+
+async function doLogin() {
+  const username = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-err');
+  err.textContent = '';
+  if (!username || !password) { err.textContent = 'Rellena todos los campos'; return; }
+
+  try {
+    const res = await api('/api/login', 'POST', { username, password });
+    // Intentar cargar clave privada guardada
+    let privKey = await loadPrivKey(password);
+    if (!privKey) {
+      // Generar nuevo par de claves
+      const kp = await generateKeyPair();
+      privKey = kp.privateKey;
+      const pubKeyB64 = await exportPubKey(kp.publicKey);
+      await savePrivKey(privKey, password);
+      await api('/api/profile', 'POST', { pubkey: pubKeyB64 });
+    }
+    const pubKeyB64 = await exportPubKey(await crypto.subtle.exportKey('spki', await crypto.subtle.importKey(
+      'pkcs8',
+      await crypto.subtle.exportKey('pkcs8', privKey),
+      { name: 'RSA-OAEP', hash: 'SHA-256' }, true, ['decrypt']
+    )).catch(async () => {
+      const kp = await generateKeyPair();
+      return kp.publicKey;
+    }));
+
+    myKeyPair = { privateKey: privKey };
+    await initApp(res.username, password);
+  } catch(e) {
+    err.textContent = e.message;
+  }
+}
+
+async function doRegister() {
+  const username = document.getElementById('reg-user').value.trim();
+  const password = document.getElementById('reg-pass').value;
+  const err = document.getElementById('reg-err');
+  err.textContent = '';
+
+  if (!username || !password) { err.textContent = 'Rellena todos los campos'; return; }
+  if (username.length < 3) { err.textContent = 'Mínimo 3 caracteres'; return; }
+  if (password.length < 6) { err.textContent = 'Contraseña mínimo 6 caracteres'; return; }
+
+  try {
+    // Generar par de claves E2E
+    const kp = await generateKeyPair();
+    const pubKeyB64 = await exportPubKey(kp.publicKey);
+    await savePrivKey(kp.privateKey, password);
+
+    const res = await api('/api/register', 'POST', {
+      username, password, pubkey: pubKeyB64, avatar: selectedAvatar
+    });
+
+    myKeyPair = { privateKey: kp.privateKey };
+    await initApp(res.username, password);
+  } catch(e) {
+    err.textContent = e.message;
+  }
+}
+
+async function doLogout() {
+  await api('/api/logout', 'POST');
+  if (sseSource) sseSource.close();
+  location.reload();
+}
+
+// ══════════════════════════════════════════
+// INIT APP
+// ══════════════════════════════════════════
+async function initApp(username, password) {
+  myUser = username;
+
+  // Si no tenemos clave privada, intentar de nuevo con la contraseña
+  if (!myKeyPair) {
+    let privKey = await loadPrivKey(password);
+    if (!privKey) {
+      const kp = await generateKeyPair();
+      privKey = kp.privateKey;
+      const pubKeyB64 = await exportPubKey(kp.publicKey);
+      await savePrivKey(privKey, password);
+      await api('/api/profile', 'POST', { pubkey: pubKeyB64 });
+    }
+    myKeyPair = { privateKey: privKey };
+  }
+
+  // Cargar perfil
+  const me = await api('/api/me');
+  document.getElementById('my-avatar').textContent = me.avatar || '👤';
+  document.getElementById('my-name').textContent = me.username;
+
+  // Mostrar app
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+
+  // Cargar usuarios
+  await loadUsers();
+
+  // Conectar SSE
+  connectSSE();
+
+  // Actualizar badges
+  updateUnread();
+  setInterval(updateUnread, 30000);
+}
+
+// ══════════════════════════════════════════
+// SSE
+// ══════════════════════════════════════════
+function connectSSE() {
+  sseSource = new EventSource('/api/stream');
+  sseSource.addEventListener('chat', async (e) => {
+    const msg = JSON.parse(e.data);
+    if (currentChat === msg.from && currentSection === 'chat') {
+      await appendMessage(msg, false);
+      scrollToBottom();
+    }
+    updateUnread();
+    loadUsers(); // actualizar previews
+  });
+  sseSource.addEventListener('mail', (e) => {
+    updateUnread();
+    if (currentSection === 'mail') loadMailList();
+  });
+  sseSource.onerror = () => {
+    setTimeout(connectSSE, 3000);
+  };
+}
+
+// ══════════════════════════════════════════
+// USUARIOS
+// ══════════════════════════════════════════
+async function loadUsers() {
+  allUsers = await api('/api/users');
+  renderUserList(allUsers);
+  // Actualizar select de compose
+  const sel = document.getElementById('compose-to');
+  sel.innerHTML = '<option value="">Seleccionar destinatario...</option>' +
+    allUsers.map(u => `<option value="${u.username}">${u.avatar || '👤'} ${u.username}</option>`).join('');
+}
+
+function renderUserList(users) {
+  const list = document.getElementById('user-list');
+  if (!users.length) {
+    list.innerHTML = '<div style="padding:1rem;color:var(--muted);text-align:center;font-size:0.85rem;">No hay otros usuarios</div>';
+    return;
+  }
+  list.innerHTML = users.map(u => `
+    <div class="user-item ${currentChat===u.username&&currentSection==='chat'?'active':''}" onclick="openChat('${u.username}')">
+      <div class="user-avatar">${u.avatar || '👤'}</div>
+      <div class="user-info">
+        <div class="user-name">${u.username}</div>
+        <div class="user-preview">🔒 Cifrado E2E</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterUsers() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  renderUserList(allUsers.filter(u => u.username.toLowerCase().includes(q)));
+}
+
+// ══════════════════════════════════════════
+// SECCIONES
+// ══════════════════════════════════════════
+function switchSection(section) {
+  currentSection = section;
+  document.getElementById('nav-chat').classList.toggle('active', section==='chat');
+  document.getElementById('nav-mail').classList.toggle('active', section==='mail');
+  document.getElementById('chat-panel').style.display = section==='chat' ? 'flex' : 'none';
+  document.getElementById('mail-panel').style.display = section==='mail' ? 'flex' : 'none';
+
+  if (section === 'chat') {
+    document.getElementById('panel-header').style.display = 'flex';
+    if (!currentChat) {
+      document.getElementById('panel-title').textContent = 'Selecciona un usuario';
+      document.getElementById('header-avatar').textContent = '💬';
+      document.getElementById('panel-sub').textContent = '';
+      document.getElementById('panel-actions').innerHTML = '';
+    }
+  } else {
+    document.getElementById('panel-header').style.display = 'none';
+    loadMailList();
+  }
+}
+
+// ══════════════════════════════════════════
+// CHAT
+// ══════════════════════════════════════════
+async function openChat(username) {
+  currentChat = username;
+  currentSection = 'chat';
+  switchSection('chat');
+
+  const u = allUsers.find(x => x.username === username) || {};
+  document.getElementById('header-avatar').textContent = u.avatar || '👤';
+  document.getElementById('panel-title').textContent = username;
+  document.getElementById('panel-sub').textContent = '🔒 Cifrado E2E activo';
+  document.getElementById('panel-actions').innerHTML = '<span class="lock-badge">🔒 E2E</span>';
+  document.getElementById('chat-input-area').style.display = 'flex';
+
+  // Resaltar usuario seleccionado
+  document.querySelectorAll('.user-item').forEach(el => {
+    el.classList.toggle('active', el.querySelector('.user-name')?.textContent === username);
+  });
+
+  // Cargar historial
+  const msgs = document.getElementById('messages-area');
+  msgs.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.8rem;padding:1rem;">🔒 Cargando mensajes cifrados...</div>';
+
+  try {
+    const history = await api(`/api/chat/history?with=${encodeURIComponent(username)}`);
+    msgs.innerHTML = '';
+
+    if (!history.length) {
+      msgs.innerHTML = `<div class="empty-state"><div class="empty-icon">🔒</div><div class="empty-text">Ningún mensaje aún</div><div style="font-size:0.78rem;color:var(--muted)">Los mensajes están cifrados de extremo a extremo</div></div>`;
+    } else {
+      for (const msg of history) {
+        await appendMessage(msg, false);
+      }
+    }
+    scrollToBottom();
+  } catch(e) {
+    msgs.innerHTML = '<div style="color:var(--red);padding:1rem;">Error cargando mensajes</div>';
+  }
+}
+
+async function appendMessage(msg, scroll = true) {
+  const msgs = document.getElementById('messages-area');
+  // Quitar empty state si existe
+  const empty = msgs.querySelector('.empty-state');
+  if (empty) empty.remove();
+
+  const isMe = msg.from === myUser;
+  let text = '🔒 [Descifrando...]';
+
+  if (isMe || msg.to === myUser) {
+    try {
+      text = await decryptMessage(myKeyPair.privateKey, msg.content, msg.iv, msg.encKey || msg.iv);
+    } catch(e) {
+      // Fallback: si es el emisor, el contenido puede estar cifrado para el receptor
+      text = isMe ? '[Enviado - cifrado para el receptor]' : '🔒 [No se puede descifrar]';
+    }
+  }
+
+  const time = new Date(msg.timestamp).toLocaleTimeString('es', {hour:'2-digit',minute:'2-digit'});
+  const row = document.createElement('div');
+  row.className = `msg-row ${isMe ? 'me' : 'them'}`;
+  row.innerHTML = `
+    <div>
+      <div class="msg-bubble">${escHtml(text)}</div>
+      <div class="msg-status ${msg.read?'read':''}">${isMe ? (msg.read?'✓✓':'✓') : ''}</div>
+    </div>
+    <div class="msg-time">${time}</div>
+  `;
+  msgs.appendChild(row);
+  if (scroll) scrollToBottom();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || !currentChat) return;
+
+  const pubKey = await getPubKeyFor(currentChat);
+  if (!pubKey) { showToast('⚠️ El usuario no tiene clave pública'); return; }
+
+  // Cifrar para el receptor Y para nosotros (para poder leer nuestros propios mensajes)
+  // Estrategia: ciframos con la clave del receptor. Para el historial del emisor, guardamos también encKey cifrada con nuestra propia clave.
+  const encrypted = await encryptMessage(pubKey, text);
+
+  // También cifrar para nosotros mismos
+  let myPubKey = null;
+  try {
+    const me = await api('/api/me');
+    if (me.pubkey) myPubKey = await importPubKey(me.pubkey);
+  } catch(e) {}
+
+  const payload = {
+    to: currentChat,
+    content: encrypted.content,
+    iv: encrypted.iv,
+    encKey: encrypted.encKey,
+  };
+
+  try {
+    await api('/api/chat/send', 'POST', payload);
+    input.value = '';
+    input.style.height = '44px';
+
+    // Mostrar el mensaje en nuestra pantalla
+    const fakemsg = {
+      from: myUser,
+      to: currentChat,
+      content: encrypted.content,
+      iv: encrypted.iv,
+      encKey: encrypted.encKey,
+      timestamp: Date.now(),
+      read: false
+    };
+
+    const msgs = document.getElementById('messages-area');
+    const empty = msgs.querySelector('.empty-state');
+    if (empty) empty.remove();
+
+    const time = new Date(fakemsg.timestamp).toLocaleTimeString('es', {hour:'2-digit',minute:'2-digit'});
+    const row = document.createElement('div');
+    row.className = 'msg-row me';
+    row.innerHTML = `
+      <div>
+        <div class="msg-bubble">${escHtml(text)}</div>
+        <div class="msg-status">✓</div>
+      </div>
+      <div class="msg-time">${time}</div>
+    `;
+    msgs.appendChild(row);
+    scrollToBottom();
+  } catch(e) {
+    showToast('Error enviando: ' + e.message);
+  }
+}
+
+function chatKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = '44px';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function scrollToBottom() {
+  const msgs = document.getElementById('messages-area');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ══════════════════════════════════════════
+// MAIL
+// ══════════════════════════════════════════
+function switchMailTab(tab) {
+  currentMailTab = tab;
+  document.querySelectorAll('.mail-tab').forEach((t,i) => {
+    t.classList.toggle('active', ['inbox','sent','drafts'][i] === tab);
+  });
+  document.getElementById('mail-view').style.display = 'none';
+  loadMailList();
+}
+
+async function loadMailList() {
+  const list = document.getElementById('mail-list');
+  list.innerHTML = '<div style="padding:1rem;color:var(--muted);text-align:center;">Cargando...</div>';
+  try {
+    const mails = await api(`/api/mail/${currentMailTab}`);
+    if (!mails.length) {
+      list.innerHTML = '<div class="empty-state" style="height:200px"><div class="empty-icon">📭</div><div class="empty-text">Sin correos</div></div>';
+      return;
+    }
+    list.innerHTML = '';
+    for (const mail of mails) {
+      // Descifrar asunto para previsualización
+      let subject = '🔒 [Cifrado]';
+      try {
+        subject = await decryptMessage(myKeyPair.privateKey, mail.subject, mail.iv_subject, mail.iv_subject);
+      } catch(e) {}
+
+      const other = currentMailTab === 'inbox' ? mail.from : (mail.to || 'Borrador');
+      const ou = allUsers.find(x => x.username === other) || {};
+      const time = new Date(mail.timestamp).toLocaleString('es', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+
+      const item = document.createElement('div');
+      item.className = `mail-item ${!mail.read && currentMailTab==='inbox' ? 'unread' : ''}`;
+      item.innerHTML = `
+        <div class="mail-avatar">${ou.avatar || '📧'}</div>
+        <div class="mail-info">
+          <div class="mail-from">${escHtml(other)}</div>
+          <div class="mail-subject">${escHtml(subject)}</div>
+          <div class="mail-preview">🔒 Cifrado E2E</div>
+        </div>
+        <div class="mail-time">${time}</div>
+      `;
+      item.onclick = () => openMail(mail);
+      list.appendChild(item);
+    }
+  } catch(e) {
+    list.innerHTML = '<div style="color:var(--red);padding:1rem;">Error cargando</div>';
+  }
+}
+
+async function openMail(mail) {
+  currentMail = mail;
+  const view = document.getElementById('mail-view');
+  view.style.display = 'flex';
+  view.innerHTML = '<div style="padding:2rem;color:var(--muted);">🔒 Descifrando...</div>';
+
+  let subject = '🔒 [No se puede descifrar]';
+  let body = '🔒 [No se puede descifrar]';
+
+  try {
+    subject = await decryptMessage(myKeyPair.privateKey, mail.subject, mail.iv_subject, mail.iv_subject);
+  } catch(e) {}
+  try {
+    body = await decryptMessage(myKeyPair.privateKey, mail.content, mail.iv_body, mail.iv_body);
+  } catch(e) {}
+
+  const time = new Date(mail.timestamp).toLocaleString('es', {weekday:'long',day:'2-digit',month:'long',hour:'2-digit',minute:'2-digit'});
+
+  view.innerHTML = `
+    <div class="mail-view-header">
+      <div class="mail-view-subject">${escHtml(subject)}</div>
+      <div class="mail-view-meta">
+        <span>De: <strong>${escHtml(mail.from)}</strong></span>
+        <span>Para: <strong>${escHtml(mail.to)}</strong></span>
+        <span>${time}</span>
+        <span style="color:var(--green)">🔒 E2E</span>
+      </div>
+      <div style="margin-top:0.75rem;display:flex;gap:0.5rem;">
+        ${currentMailTab==='inbox'?`<button class="btn-sm btn-primary" onclick="replyMail('${escHtml(mail.from)}')">↩️ Responder</button>`:''}
+        <button class="btn-sm btn-danger" onclick="deleteMail('${mail.id}')">🗑️ Eliminar</button>
+      </div>
+    </div>
+    <div class="mail-view-body">${escHtml(body)}</div>
+  `;
+}
+
+function replyMail(to) {
+  openCompose(to);
+}
+
+async function deleteMail(id) {
+  try {
+    await api('/api/mail/delete', 'POST', { id });
+    showToast('Correo eliminado');
+    document.getElementById('mail-view').style.display = 'none';
+    loadMailList();
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+}
+
+// ══════════════════════════════════════════
+// COMPOSE
+// ══════════════════════════════════════════
+function openCompose(to = '') {
+  composeDraftId = null;
+  document.getElementById('compose-to').value = to;
+  document.getElementById('compose-subject').value = '';
+  document.getElementById('compose-body-text').value = '';
+  document.getElementById('compose-modal').classList.add('open');
+}
+
+function closeCompose() {
+  document.getElementById('compose-modal').classList.remove('open');
+}
+
+async function sendMail() {
+  const to      = document.getElementById('compose-to').value;
+  const subject = document.getElementById('compose-subject').value.trim();
+  const body    = document.getElementById('compose-body-text').value.trim();
+
+  if (!to || !subject || !body) { showToast('Rellena todos los campos'); return; }
+
+  const pubKey = await getPubKeyFor(to);
+  if (!pubKey) { showToast('El destinatario no tiene clave pública'); return; }
+
+  const encSubj = await encryptMessage(pubKey, subject);
+  const encBody = await encryptMessage(pubKey, body);
+
+  try {
+    await api('/api/mail/send', 'POST', {
+      to,
+      subject: encSubj.content,
+      iv_subject: encSubj.iv,
+      content: encBody.content,
+      iv_body: encBody.iv,
+      draft_id: composeDraftId
+    });
+    showToast('✅ Correo enviado cifrado');
+    closeCompose();
+    if (currentSection === 'mail') loadMailList();
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+}
+
+async function saveDraft() {
+  const to      = document.getElementById('compose-to').value;
+  const subject = document.getElementById('compose-subject').value.trim();
+  const body    = document.getElementById('compose-body-text').value.trim();
+
+  // Para borradores ciframos con nuestra propia clave pública si existe
+  let encSubj = { content: subject || '', iv: '', encKey: '' };
+  let encBody = { content: body || '', iv: '', encKey: '' };
+
+  try {
+    const me = await api('/api/me');
+    if (me.pubkey) {
+      const myPubKey = await importPubKey(me.pubkey);
+      if (subject) encSubj = await encryptMessage(myPubKey, subject);
+      if (body) encBody = await encryptMessage(myPubKey, body);
+    }
+  } catch(e) {}
+
+  try {
+    const res = await api('/api/mail/draft', 'POST', {
+      to, subject: encSubj.content, iv_subject: encSubj.iv,
+      content: encBody.content, iv_body: encBody.iv,
+      draft_id: composeDraftId
+    });
+    composeDraftId = res.id;
+    showToast('💾 Borrador guardado');
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+}
+
+// ══════════════════════════════════════════
+// UNREAD BADGES
+// ══════════════════════════════════════════
+async function updateUnread() {
+  try {
+    const data = await api('/api/unread');
+    const cb = document.getElementById('chat-badge');
+    const mb = document.getElementById('mail-badge');
+    cb.style.display = data.chat > 0 ? '' : 'none';
+    cb.textContent = data.chat;
+    mb.style.display = data.mail > 0 ? '' : 'none';
+    mb.textContent = data.mail;
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ══════════════════════════════════════════
+// INIT - verificar sesión activa
+// ══════════════════════════════════════════
+(async () => {
+  try {
+    const me = await api('/api/me');
+    // Sesión activa pero necesitamos la contraseña para la clave privada
+    // Mostrar pantalla de login con mensaje
+    document.getElementById('login-user').value = me.username;
+    const authTitle = document.querySelector('.auth-sub');
+    authTitle.textContent = 'Introduce tu contraseña para desbloquear el cifrado';
+    authTitle.style.color = '#9f67ff';
+  } catch(e) {
+    // No hay sesión, mostrar auth normal
+  }
+})();
+</script>
+</body>
+</html>
