@@ -11,6 +11,7 @@ import uuid
 import hashlib
 import time
 import threading
+import re
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 from http.cookies import SimpleCookie
@@ -20,11 +21,25 @@ from http.cookies import SimpleCookie
 # ─────────────────────────────────────────────
 HOST = "0.0.0.0"
 PORT = int(os.environ.get("PORT", 8080))
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+
+# IMPORTANTE: Usar directorio persistente en Render si existe
+RENDER_PERSISTENT = os.environ.get("RENDER_PERSISTENT_DATA", "")
+if RENDER_PERSISTENT:
+    DATA_DIR = RENDER_PERSISTENT
+else:
+    DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+
 USERS_FILE   = os.path.join(DATA_DIR, "users.json")
 CHATS_FILE   = os.path.join(DATA_DIR, "chats.json")
 MAILS_FILE   = os.path.join(DATA_DIR, "mails.json")
+ADMIN_FILE   = os.path.join(DATA_DIR, "admins.json")
 SESSION_TTL  = 86400  # 24 horas
+ADMIN_USERNAME = "admin"
+
+# ─────────────────────────────────────────────
+# RESTO DEL CÓDIGO IGUAL...
+# (Mantén todo el resto del código igual)
+# ─────────────────────────────────────────────
 
 # ─────────────────────────────────────────────
 # ESTADO EN MEMORIA
